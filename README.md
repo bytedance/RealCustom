@@ -1,9 +1,17 @@
 # RealCustom Series
-
+<p align="center">
+<img src="./assets/teaser.svg" width=95% height=95% 
+class="center">
+</p>
 
 ## 📖 Introduction
 
 Existing text-to-image customization methods (i.e., subject-driven generation) face a fundamental challenge due to the entangled influence of visual and textual conditions. This inherent conflict forces a trade-off between subject fidelity and textual controllability, preventing simultaneous optimization of both objectives.We present RealCustom to disentangle subject similarity from text controllability and thereby allows both to be optimized simultaneously without conflicts. The core idea of RealCustom is to represent given subjects as real words that can be seamlessly integrated with given texts, and further leveraging the relevance between real words and image regions to disentangle visual condition from text condition.
+
+<p align="center">
+<img src="./assets/process.svg" width=95% height=95% 
+class="center">
+</p>
 
 ## ⚡️ Quick Start
 
