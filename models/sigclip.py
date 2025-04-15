@@ -48,7 +48,7 @@ class SigLIPViTBackbone(VisionBackbone):
         super().__init__(backbone_name_or_path, image_resize_strategy, default_image_size=default_image_size)
         # load from local paths
         sigclip_pretrained_cfg = timm.models.create_model(backbone_name_or_path).default_cfg
-        sigclip_pretrained_cfg['file'] = '/opt/tiger/ckpts/vit_so400m_patch14_siglip_384/open_clip_pytorch_model.bin'
+        sigclip_pretrained_cfg['file'] = 'ckpts/vit_so400m_patch14_siglip_384/open_clip_pytorch_model.bin'
 
         # Initialize both Featurizers (ViTs) by downloading from HF / TIMM Hub if necessary
         self.siglip_featurizer: VisionTransformer = timm.create_model(

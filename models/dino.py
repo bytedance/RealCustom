@@ -49,7 +49,7 @@ class DinoViTBackbone(VisionBackbone):
         super().__init__(backbone_name_or_path, image_resize_strategy, default_image_size=default_image_size)
         # load from local paths
         dino_pretrained_cfg = timm.models.create_model(backbone_name_or_path).default_cfg
-        dino_pretrained_cfg['file'] = '/opt/tiger/ckpts/vit_large_patch14_reg4_dinov2.lvd142m/pytorch_model.bin'
+        dino_pretrained_cfg['file'] = 'ckpts/vit_large_patch14_reg4_dinov2.lvd142m/pytorch_model.bin'
 
         # Initialize both Featurizers (ViTs) by downloading from HF / TIMM Hub if necessary
         self.dino_featurizer: VisionTransformer = timm.create_model(

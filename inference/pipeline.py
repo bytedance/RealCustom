@@ -99,7 +99,7 @@ class RealCustomInferencePipeline:
     
     def _load_encoder_checkpoint(self, ):
         # Initialize text encoder
-        text_encoder_variant = ["/opt/tiger/ckpts/sdxl/clip-sdxl-1", "/opt/tiger/ckpts/sdxl/clip-sdxl-2"]
+        text_encoder_variant = ["ckpts/sdxl/clip-sdxl-1", "ckpts/sdxl/clip-sdxl-2"]
         text_encoder_mode = ["penultimate_nonorm"]
         self.text_model = TextModel(text_encoder_variant, text_encoder_mode)
         self.text_model.eval().to(self.device).to(self.torch_dtype)
