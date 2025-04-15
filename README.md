@@ -13,6 +13,10 @@ Existing text-to-image customization methods (i.e., subject-driven generation) f
 class="center">
 </p>
 
+## 🔥 News
+- [04/2025] 🔥 We release our newly customization framework [UNO](https://github.com/bytedance/UNO?tab=readme-ov-file)
+- [04/2025] 🔥 The code and model of RealCustom is released.
+
 ## ⚡️ Quick Start
 
 ### 🔧 Requirements and Installation
@@ -28,10 +32,29 @@ bash inference/inference_single_image.sh
 ```
 
 ### 🌟 Gradio Demo
-
 ```
 python inference/app.py
 ```
+
+### 🎨 Enjoy on [Dreamina](https://jimeng.jianying.com/ai-tool/home)
+RealCustom is previously commercially applied in Dreamina and Doubao, ByteDance. You can also enjoy the more advanced customization algorithm in Dreamina!
+
+#### Step 1: Create A Character: 
+Create character images and corresponding appearance descriptions through prompt descriptions, uploading reference images. Specifically:
+    1. **Character Image**: Best in clean background, close-up, prominent subject, high-quality resolution.
+    2. **Character Description**: Brief, includes the subject and key appearance elements.
+<p align="center">
+<img src="./assets/dreamina_character.jpg" width=50% height=50% 
+class="center">
+</p>
+
+#### Step 2: Character-Driven Generation:
+Input prompts where the subject is replaced by the selected character, guiding the character to make corresponding changes such as style, actions, expressions, scenes, and modifiers. 
+There is no need to add descriptions of the subject in the prompt. "Face Reference Strength" is the weight for ID retention, and "Body Reference Strength" is the weight for IP retention.
+<p align="center">
+<img src="./assets/dreamina_generation.jpg" width=50% height=50% 
+class="center">
+</p>
 
 ##  Citation
 If you find this project useful for your research, please consider citing our papers:
@@ -48,5 +71,11 @@ If you find this project useful for your research, please consider citing our pa
   author={Mao, Zhendong and Huang, Mengqi and Ding, Fei and Liu, Mingcong and He, Qian and Zhang, Yongdong},
   journal={arXiv preprint arXiv:2408.09744},
   year={2024}
+}
+@article{wu2025less,
+  title={Less-to-More Generalization: Unlocking More Controllability by In-Context Generation},
+  author={Wu, Shaojin and Huang, Mengqi and Wu, Wenxu and Cheng, Yufeng and Ding, Fei and He, Qian},
+  journal={arXiv preprint arXiv:2504.02160},
+  year={2025}
 }
 ```
