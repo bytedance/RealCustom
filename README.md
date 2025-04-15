@@ -24,12 +24,12 @@ bash envs/init.sh
 
 ### ✍️ Inference
 ```bash 
-inference/inference_single_image.sh
+bash inference/inference_single_image.sh
 ```
 
 ### 🌟 Gradio Demo
 
-```bash
+```
 python inference/app.py
 ```
 
