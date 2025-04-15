@@ -1,0 +1,29 @@
+numpy
+ftfy
+
+# Training
+bs4==0.0.1              # Needed for text cleaning
+bson==0.5.10
+diffusers==0.19.3       # diffusers[torch]==0.19.3 in control
+einops==0.6.0
+ftfy==6.1.1             # Needed for text cleaning
+kornia==0.6.12
+lpips==0.1.4
+sentencepiece==0.1.99   # Needed for T5 tokenizer
+transformers==4.36.2
+tqdm==4.64.1
+torchgeometry           # Needed for ssim loss
+expecttest              # Needed for compile
+accelerate==0.24.1      # model saving bugs when accelerate==0.25.0
+
+# Inference
+av==10.0.0
+pims==0.6.1
+opencv-python-headless==4.6.0.66
+
+gradio==3.42.0
+httpx==0.23.3
+opencv-python
+open_clip_torch
+protobuf==3.20.0
+huggingface_hub==0.25.0
