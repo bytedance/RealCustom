@@ -19,8 +19,8 @@ from inference.pipeline import RealCustomInferencePipeline
 def create_demo():
     pipeline = RealCustomInferencePipeline(
         unet_config="configs/realcustom_sigdino_highres.json",
-        unet_checkpoint="ckpts/sdxl/unet/diffusion_pytorch_model_rlhf_v5.bin",
-        realcustom_checkpoint="ckpts/realcustom/RealCustom_0025000_ema_highres.pth",
+        unet_checkpoint="ckpts/sdxl/unet/sdxl-unet.bin",
+        realcustom_checkpoint="ckpts/realcustom/RealCustom_highres.pth",
         vae_config="ckpts/sdxl/vae/sdxl.json",
         vae_checkpoint="ckpts/sdxl/vae/sdxl-vae.pth",
     )
