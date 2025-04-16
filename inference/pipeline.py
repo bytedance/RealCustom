@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import json
 import torch
 import torchvision
@@ -49,6 +50,17 @@ class RealCustomInferencePipeline:
             self.torch_dtype = torch.bfloat16
         else:
             self.torch_dtype = torch.float32
+
+        if not os.path.exists("ckpts/"):
+            from huggingface_hub import snapshot_download
+            print("Downloading RealCustom ...")
+            snapshot_download(
+                repo_id="bytedance-research/RealCustom",
+                repo_type="model",
+                local_dir="ckpts",  # 指定本地目录
+                allow_patterns="ckpts/**",  # 只下载 ckpts 文件夹内容
+                local_dir_use_symlinks=False  # 直接存储文件而非符号链接
+            )
         
         self.device = device
         self.unet_checkpoint = unet_checkpoint
