@@ -1,4 +1,15 @@
 # RealCustom Series
+
+<p align="center"> 
+<a href="https://github.com/bytedance/RealCustom"><img alt="Build" src="https://img.shields.io/github/stars/bytedance/RealCustom"></a> 
+<a href="https://corleone-huang.github.io/RealCustom_plus_plus/"><img alt="Build" src="https://img.shields.io/badge/Project%20Page-RealCustom-yellow"></a> 
+<a href="https://arxiv.org/pdf/2408.09744"><img alt="Build" src="https://img.shields.io/badge/arXiv%20paper-RealCustom-b31b1b.svg"></a>
+<a href="https://huggingface.co/bytedance-research/RealCustom"><img src="https://img.shields.io/static/v1?label=%F0%9F%A4%97%20Hugging%20Face&message=Model&color=orange"></a>
+<a href="https://huggingface.co/spaces/bytedance-research/RealCustom"><img src="https://img.shields.io/static/v1?label=%F0%9F%A4%97%20Hugging%20Face&message=demo&color=orange"></a>
+</p>
+
+
+
 <p align="center">
 <img src="./assets/teaser.svg" width=95% height=95% 
 class="center">
