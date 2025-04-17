@@ -59,7 +59,7 @@ class RealCustomInferencePipeline:
                 repo_type="model",
                 local_dir="ckpts",  # 指定本地目录
                 allow_patterns="ckpts/**",  # 只下载 ckpts 文件夹内容
-                local_dir_use_symlinks=False  # 直接存储文件而非符号链接
+                local_dir_use_symlinks=False,  # 直接存储文件而非符号链接
                 request_timeout=600  # 设置超时时间为600秒（10分钟）
             )
         
