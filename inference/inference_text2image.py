@@ -30,7 +30,7 @@ from schedulers.ddim import DDIMScheduler
 from schedulers.dpm_s import DPMSolverSingleStepScheduler
 from schedulers.utils import get_betas
 
-from inference_utils import find_phrase_positions_in_text, classifier_free_guidance_image_prompt_cascade
+from inference_utils import find_phrase_positions_in_text, classifier_free_guidance_image_prompt_cascade, classifier_free_guidance
 from mask_generation import mask_generation
 from utils import instantiate_from_config
 import time
@@ -51,7 +51,6 @@ parser.add_argument("--text_encoder_variant", type=str, nargs="+")
 parser.add_argument("--vae_config", type=str, default="configs/vae.json")                                             # default
 parser.add_argument("--vae_checkpoint", type=str, required=True)
 parser.add_argument("--unet_config", type=str, required=True)
-parser.add_argument("--unet_checkpoint", type=str, required=True)
 parser.add_argument("--unet_checkpoint_base_model", type=str, default="")
 parser.add_argument("--unet_prediction", type=str, choices=DDIMScheduler.prediction_types, default="epsilon")          # default, "epsilon"
 
@@ -65,12 +64,6 @@ parser.add_argument("--seed", type=int, default=666)
 parser.add_argument("--device", type=str, default="cuda")
 
 parser.add_argument("--text_prompt", type=str, required=True)
-parser.add_argument("--image_prompt_path", type=str, required=True)
-parser.add_argument("--target_phrase", type=str, required=True)
-parser.add_argument("--mask_scope", type=float, default=0.20)
-parser.add_argument("--mask_strategy",  type=str, nargs="+", default=["max_norm"])
-parser.add_argument("--mask_reused_step", type=int, default=12)
-
 args = parser.parse_args()
 
 # Initialize unet model
@@ -78,15 +71,10 @@ with open(args.unet_config) as unet_config_file:
     unet_config = json.load(unet_config_file)
 
     # Settings for image encoder
-    vision_model_config = unet_config.pop("vision_model_config", None)
-    args.vision_model_config = vision_model_config.pop("vision_model_config", None)
-
     unet_type = unet_config.pop("type", None)
     unet_model = UNet2DConditionModelDiffusers(**unet_config)
 
 unet_model.eval().to(args.device)
-unet_model.load_state_dict(torch.load(args.unet_checkpoint, map_location=args.device), strict=False)
-print("loading unet model finished.")
 
 if args.unet_checkpoint_base_model != "":
     if "safetensors" in args.unet_checkpoint_base_model:
@@ -125,11 +113,6 @@ text_model = TextModel(args.text_encoder_variant, ["penultimate_nonorm"])
 text_model.eval().to(args.device)
 print("loading text model finished.")
 
-# Initialize image model.
-vision_model = instantiate_from_config(args.vision_model_config)
-vision_model = vision_model.eval().to(args.device)
-print("loading image model finished.")
-
 negative_prompt = ""
 if args.negative_prompt:
     with open(args.negative_prompt) as f:
@@ -165,20 +148,6 @@ with torch.no_grad():
         text_negative_output = text_model(negative_prompt)
 
     positive_prompt = args.text_prompt
-    positive_promt_image_path = args.image_prompt_path
-    target_phrase = args.target_phrase
-
-    # Compute target phrases
-    target_token = torch.zeros(1, 77).to(args.device)
-    positions = find_phrase_positions_in_text(positive_prompt, target_phrase)
-    for position in positions:
-        prompt_before = positive_prompt[:position] # NOTE We do not need -1 here because the SDXL text encoder does not encode the trailing space.
-        prompt_include = positive_prompt[:position+len(target_phrase)]
-        print("prompt before: ", prompt_before, ", prompt_include: ", prompt_include)
-        prompt_before_length = text_model.get_vaild_token_length(prompt_before) + 1
-        prompt_include_length = text_model.get_vaild_token_length(prompt_include) + 1
-        print("prompt_before_length: ", prompt_before_length, ", prompt_include_length: ", prompt_include_length)
-        target_token[:, prompt_before_length:prompt_include_length] = 1
 
     # Text used for progress bar
     pbar_text = positive_prompt[:40]
@@ -191,28 +160,6 @@ with torch.no_grad():
         text_negative_embeddings = text_negative_output.embeddings.repeat_interleave(args.samples_per_prompt, dim=0)
         text_negative_pooled = text_negative_output.pooled[-1].repeat_interleave(args.samples_per_prompt, dim=0)
     
-    # Compute image embeddings
-    positive_image = Image.open(positive_promt_image_path).convert("RGB")
-    positive_image = torchvision.transforms.ToTensor()(positive_image)
-
-    positive_image = positive_image.unsqueeze(0).repeat_interleave(args.samples_per_prompt, dim=0)
-    positive_image = torch.nn.functional.interpolate(
-        positive_image, 
-        size=(768, 768), 
-        mode="bilinear", 
-        align_corners=False
-    )
-    negative_image = torch.zeros_like(positive_image)
-    print(positive_image.size(), negative_image.size())
-    positive_image = positive_image.to(args.device)
-    negative_image = negative_image.to(args.device)
-
-    positive_image_dict = {"image_ref": positive_image}
-    positive_image_output = vision_model(positive_image_dict, device=args.device)
-
-    negative_image_dict = {"image_ref": negative_image}
-    negative_image_output = vision_model(negative_image_dict, device=args.device)
-
     # Initialize latent with input latent + noise (i2i) / pure noise (t2i)
     latent = torch.randn(
         size=[
@@ -227,38 +174,8 @@ with torch.no_grad():
     target_w = (args.width // vae_downsample_factor) // 2
 
     # Real Reverse diffusion process.
-    text2image_crossmap_2d_all_timesteps_list = []
-    current_step = 0
     start = time.time()
     for timestep in tqdm(iterable=infer_timesteps, desc=f"[{pbar_text}]", dynamic_ncols=True):
-        if current_step < args.mask_reused_step:
-            pred_cond, pred_cond_dict = unet_model(
-                sample=latent,
-                timestep=timestep,
-                encoder_hidden_states=text_positive_embeddings,
-                encoder_attention_mask=None,
-                added_cond_kwargs=dict(
-                    text_embeds=text_positive_pooled,
-                    time_ids=image_metadata_validate
-                ),
-                vision_input_dict=None,
-                vision_guided_mask=None,
-                return_as_origin=False,
-                return_text2image_mask=True,
-            )
-            crossmap_2d_avg = mask_generation(
-                crossmap_2d_list=pred_cond_dict["text2image_crossmap_2d"], selfmap_2d_list=pred_cond_dict.get("self_attention_map", []), 
-                target_token=target_token, mask_scope=args.mask_scope,
-                mask_target_h=target_h, mask_target_w=target_w, mask_mode=args.mask_strategy,
-            )
-        else:
-            # using previous step's mask
-            crossmap_2d_avg = text2image_crossmap_2d_all_timesteps_list[-1].squeeze(1)
-        if crossmap_2d_avg.dim() == 5: # Means that each layer uses a separate mask weight.
-            text2image_crossmap_2d_all_timesteps_list.append(crossmap_2d_avg.mean(dim=2).unsqueeze(1))
-        else:
-            text2image_crossmap_2d_all_timesteps_list.append(crossmap_2d_avg.unsqueeze(1))
-
         pred_cond, pred_cond_dict = unet_model(
             sample=latent,
             timestep=timestep,
@@ -268,14 +185,11 @@ with torch.no_grad():
                 text_embeds=text_positive_pooled,
                 time_ids=image_metadata_validate
             ),
-            vision_input_dict=positive_image_output,
-            vision_guided_mask=crossmap_2d_avg,
             return_as_origin=False,
             return_text2image_mask=True,
             multiple_reference_image=False
         )
 
-        crossmap_2d_avg_neg = crossmap_2d_avg.mean(dim=1, keepdim=True)
         pred_negative, pred_negative_dict = unet_model(
             sample=latent,
             timestep=timestep,
@@ -285,17 +199,14 @@ with torch.no_grad():
                 text_embeds=text_negative_pooled,
                 time_ids=image_metadata_validate
             ),
-            vision_input_dict=negative_image_output,
-            vision_guided_mask=crossmap_2d_avg,
             return_as_origin=False,
             return_text2image_mask=True,
             multiple_reference_image=False
         )
 
-        pred = classifier_free_guidance_image_prompt_cascade(
-            pred_t_cond=None, pred_ti_cond=pred_cond, pred_uncond=pred_negative, 
-            guidance_weight_t=args.guidance_weight, guidance_weight_i=args.guidance_weight, 
-            guidance_stdev_rescale_factor=0, cfg_rescale_mode="naive_global_direct"
+        pred = classifier_free_guidance(
+            pred_t_cond=pred_cond, pred_uncond=pred_negative, 
+            guidance_weight_t=args.guidance_weight
         )
         step = scheduler.step(
             model_output=pred,
@@ -305,12 +216,9 @@ with torch.no_grad():
 
         latent = step.prev_sample
 
-        current_step += 1
-
     sample = vae_decoder(step.pred_original_sample)
     end = time.time()
     print("运行时间：", end - start, "秒")
-
 
     # save each image 
     for sample_i in range(sample.size(0)):

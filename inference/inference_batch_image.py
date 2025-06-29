@@ -33,7 +33,6 @@ from schedulers.utils import get_betas
 from inference_utils import find_phrase_positions_in_text, classifier_free_guidance_image_prompt_cascade
 from mask_generation import mask_generation
 from utils import instantiate_from_config
-import time
 
 # Argument parser
 parser = argparse.ArgumentParser()
@@ -64,9 +63,10 @@ parser.add_argument("--guidance_weight", type=float, default=7.5)
 parser.add_argument("--seed", type=int, default=666)
 parser.add_argument("--device", type=str, default="cuda")
 
-parser.add_argument("--text_prompt", type=str, required=True)
-parser.add_argument("--image_prompt_path", type=str, required=True)
-parser.add_argument("--target_phrase", type=str, required=True)
+# parser.add_argument("--text_prompt", type=str, required=True)
+# parser.add_argument("--image_prompt_path", type=str, required=True)
+# parser.add_argument("--target_phrase", type=str, required=True)
+parser.add_argument("--json_path", type=str, required=True)
 parser.add_argument("--mask_scope", type=float, default=0.20)
 parser.add_argument("--mask_strategy",  type=str, nargs="+", default=["max_norm"])
 parser.add_argument("--mask_reused_step", type=int, default=12)
@@ -164,74 +164,109 @@ with torch.no_grad():
     if args.guidance_weight != 1:
         text_negative_output = text_model(negative_prompt)
 
-    positive_prompt = args.text_prompt
-    positive_promt_image_path = args.image_prompt_path
-    target_phrase = args.target_phrase
+    # positive_prompt = args.text_prompt
+    # positive_promt_image_path = args.image_prompt_path
+    # target_phrase = args.target_phrase
 
-    # Compute target phrases
-    target_token = torch.zeros(1, 77).to(args.device)
-    positions = find_phrase_positions_in_text(positive_prompt, target_phrase)
-    for position in positions:
-        prompt_before = positive_prompt[:position] # NOTE We do not need -1 here because the SDXL text encoder does not encode the trailing space.
-        prompt_include = positive_prompt[:position+len(target_phrase)]
-        print("prompt before: ", prompt_before, ", prompt_include: ", prompt_include)
-        prompt_before_length = text_model.get_vaild_token_length(prompt_before) + 1
-        prompt_include_length = text_model.get_vaild_token_length(prompt_include) + 1
-        print("prompt_before_length: ", prompt_before_length, ", prompt_include_length: ", prompt_include_length)
-        target_token[:, prompt_before_length:prompt_include_length] = 1
+    with open(args.json_path, "r") as f:
+        json_data = json.load(f)
 
-    # Text used for progress bar
-    pbar_text = positive_prompt[:40]
+    record_id = 0
+    for record in json_data:
+        positive_prompt = record["text"]
+        positive_promt_image_path = record["image_path"]
+        target_phrase = record["target_phrase"]
 
-    # Compute text embeddings
-    text_positive_output = text_model(positive_prompt)
-    text_positive_embeddings = text_positive_output.embeddings.repeat_interleave(args.samples_per_prompt, dim=0)
-    text_positive_pooled = text_positive_output.pooled[-1].repeat_interleave(args.samples_per_prompt, dim=0)
-    if args.guidance_weight != 1:
-        text_negative_embeddings = text_negative_output.embeddings.repeat_interleave(args.samples_per_prompt, dim=0)
-        text_negative_pooled = text_negative_output.pooled[-1].repeat_interleave(args.samples_per_prompt, dim=0)
-    
-    # Compute image embeddings
-    positive_image = Image.open(positive_promt_image_path).convert("RGB")
-    positive_image = torchvision.transforms.ToTensor()(positive_image)
+        # Compute target phrases
+        target_token = torch.zeros(1, 77).to(args.device)
+        positions = find_phrase_positions_in_text(positive_prompt, target_phrase)
+        for position in positions:
+            prompt_before = positive_prompt[:position] # NOTE We do not need -1 here because the SDXL text encoder does not encode the trailing space.
+            prompt_include = positive_prompt[:position+len(target_phrase)]
+            print("prompt before: ", prompt_before, ", prompt_include: ", prompt_include)
+            prompt_before_length = text_model.get_vaild_token_length(prompt_before) + 1
+            prompt_include_length = text_model.get_vaild_token_length(prompt_include) + 1
+            print("prompt_before_length: ", prompt_before_length, ", prompt_include_length: ", prompt_include_length)
+            target_token[:, prompt_before_length:prompt_include_length] = 1
 
-    positive_image = positive_image.unsqueeze(0).repeat_interleave(args.samples_per_prompt, dim=0)
-    positive_image = torch.nn.functional.interpolate(
-        positive_image, 
-        size=(768, 768), 
-        mode="bilinear", 
-        align_corners=False
-    )
-    negative_image = torch.zeros_like(positive_image)
-    print(positive_image.size(), negative_image.size())
-    positive_image = positive_image.to(args.device)
-    negative_image = negative_image.to(args.device)
+        # Text used for progress bar
+        pbar_text = positive_prompt[:40]
 
-    positive_image_dict = {"image_ref": positive_image}
-    positive_image_output = vision_model(positive_image_dict, device=args.device)
+        # Compute text embeddings
+        text_positive_output = text_model(positive_prompt)
+        text_positive_embeddings = text_positive_output.embeddings.repeat_interleave(args.samples_per_prompt, dim=0)
+        text_positive_pooled = text_positive_output.pooled[-1].repeat_interleave(args.samples_per_prompt, dim=0)
+        if args.guidance_weight != 1:
+            text_negative_embeddings = text_negative_output.embeddings.repeat_interleave(args.samples_per_prompt, dim=0)
+            text_negative_pooled = text_negative_output.pooled[-1].repeat_interleave(args.samples_per_prompt, dim=0)
+        
+        # Compute image embeddings
+        positive_image = Image.open(positive_promt_image_path).convert("RGB")
+        positive_image = torchvision.transforms.ToTensor()(positive_image)
 
-    negative_image_dict = {"image_ref": negative_image}
-    negative_image_output = vision_model(negative_image_dict, device=args.device)
+        positive_image = positive_image.unsqueeze(0).repeat_interleave(args.samples_per_prompt, dim=0)
+        positive_image = torch.nn.functional.interpolate(
+            positive_image, 
+            size=(768, 768), 
+            mode="bilinear", 
+            align_corners=False
+        )
+        negative_image = torch.zeros_like(positive_image)
+        # print(positive_image.size(), negative_image.size())
+        positive_image = positive_image.to(args.device)
+        negative_image = negative_image.to(args.device)
 
-    # Initialize latent with input latent + noise (i2i) / pure noise (t2i)
-    latent = torch.randn(
-        size=[
-            args.samples_per_prompt,
-            vae_config["latent_channels"],
-            args.height // vae_downsample_factor,
-            args.width // vae_downsample_factor
-        ],
-        device=args.device,
-        generator=torch.Generator(args.device).manual_seed(args.seed))
-    target_h = (args.height // vae_downsample_factor) // 2
-    target_w = (args.width // vae_downsample_factor) // 2
+        positive_image_dict = {"image_ref": positive_image}
+        positive_image_output = vision_model(positive_image_dict, device=args.device)
 
-    # Real Reverse diffusion process.
-    text2image_crossmap_2d_all_timesteps_list = []
-    current_step = 0
-    start = time.time()
-    for timestep in tqdm(iterable=infer_timesteps, desc=f"[{pbar_text}]", dynamic_ncols=True):
-        if current_step < args.mask_reused_step:
+        negative_image_dict = {"image_ref": negative_image}
+        negative_image_output = vision_model(negative_image_dict, device=args.device)
+
+        # Initialize latent with input latent + noise (i2i) / pure noise (t2i)
+        latent = torch.randn(
+            size=[
+                args.samples_per_prompt,
+                vae_config["latent_channels"],
+                args.height // vae_downsample_factor,
+                args.width // vae_downsample_factor
+            ],
+            device=args.device,
+            generator=torch.Generator(args.device).manual_seed(args.seed))
+        target_h = (args.height // vae_downsample_factor) // 2
+        target_w = (args.width // vae_downsample_factor) // 2
+
+        # Real Reverse diffusion process.
+        text2image_crossmap_2d_all_timesteps_list = []
+        current_step = 0
+        for timestep in tqdm(iterable=infer_timesteps, desc=f"[{pbar_text}]", dynamic_ncols=True):
+            if current_step < args.mask_reused_step:
+                pred_cond, pred_cond_dict = unet_model(
+                    sample=latent,
+                    timestep=timestep,
+                    encoder_hidden_states=text_positive_embeddings,
+                    encoder_attention_mask=None,
+                    added_cond_kwargs=dict(
+                        text_embeds=text_positive_pooled,
+                        time_ids=image_metadata_validate
+                    ),
+                    vision_input_dict=None,
+                    vision_guided_mask=None,
+                    return_as_origin=False,
+                    return_text2image_mask=True,
+                )
+                crossmap_2d_avg = mask_generation(
+                    crossmap_2d_list=pred_cond_dict["text2image_crossmap_2d"], selfmap_2d_list=pred_cond_dict.get("self_attention_map", []), 
+                    target_token=target_token, mask_scope=args.mask_scope,
+                    mask_target_h=target_h, mask_target_w=target_w, mask_mode=args.mask_strategy,
+                )
+            else:
+                # using previous step's mask
+                crossmap_2d_avg = text2image_crossmap_2d_all_timesteps_list[-1].squeeze(1)
+            if crossmap_2d_avg.dim() == 5: # Means that each layer uses a separate mask weight.
+                text2image_crossmap_2d_all_timesteps_list.append(crossmap_2d_avg.mean(dim=2).unsqueeze(1))
+            else:
+                text2image_crossmap_2d_all_timesteps_list.append(crossmap_2d_avg.unsqueeze(1))
+
             pred_cond, pred_cond_dict = unet_model(
                 sample=latent,
                 timestep=timestep,
@@ -241,82 +276,53 @@ with torch.no_grad():
                     text_embeds=text_positive_pooled,
                     time_ids=image_metadata_validate
                 ),
-                vision_input_dict=None,
-                vision_guided_mask=None,
+                vision_input_dict=positive_image_output,
+                vision_guided_mask=crossmap_2d_avg,
                 return_as_origin=False,
                 return_text2image_mask=True,
+                multiple_reference_image=False
             )
-            crossmap_2d_avg = mask_generation(
-                crossmap_2d_list=pred_cond_dict["text2image_crossmap_2d"], selfmap_2d_list=pred_cond_dict.get("self_attention_map", []), 
-                target_token=target_token, mask_scope=args.mask_scope,
-                mask_target_h=target_h, mask_target_w=target_w, mask_mode=args.mask_strategy,
+
+            crossmap_2d_avg_neg = crossmap_2d_avg.mean(dim=1, keepdim=True)
+            pred_negative, pred_negative_dict = unet_model(
+                sample=latent,
+                timestep=timestep,
+                encoder_hidden_states=text_negative_embeddings,
+                encoder_attention_mask=None,
+                added_cond_kwargs=dict(
+                    text_embeds=text_negative_pooled,
+                    time_ids=image_metadata_validate
+                ),
+                vision_input_dict=negative_image_output,
+                vision_guided_mask=crossmap_2d_avg,
+                return_as_origin=False,
+                return_text2image_mask=True,
+                multiple_reference_image=False
             )
-        else:
-            # using previous step's mask
-            crossmap_2d_avg = text2image_crossmap_2d_all_timesteps_list[-1].squeeze(1)
-        if crossmap_2d_avg.dim() == 5: # Means that each layer uses a separate mask weight.
-            text2image_crossmap_2d_all_timesteps_list.append(crossmap_2d_avg.mean(dim=2).unsqueeze(1))
-        else:
-            text2image_crossmap_2d_all_timesteps_list.append(crossmap_2d_avg.unsqueeze(1))
 
-        pred_cond, pred_cond_dict = unet_model(
-            sample=latent,
-            timestep=timestep,
-            encoder_hidden_states=text_positive_embeddings,
-            encoder_attention_mask=None,
-            added_cond_kwargs=dict(
-                text_embeds=text_positive_pooled,
-                time_ids=image_metadata_validate
-            ),
-            vision_input_dict=positive_image_output,
-            vision_guided_mask=crossmap_2d_avg,
-            return_as_origin=False,
-            return_text2image_mask=True,
-            multiple_reference_image=False
-        )
+            pred = classifier_free_guidance_image_prompt_cascade(
+                pred_t_cond=None, pred_ti_cond=pred_cond, pred_uncond=pred_negative, 
+                guidance_weight_t=args.guidance_weight, guidance_weight_i=args.guidance_weight, 
+                guidance_stdev_rescale_factor=0, cfg_rescale_mode="naive_global_direct"
+            )
+            step = scheduler.step(
+                model_output=pred,
+                model_output_type=args.unet_prediction,
+                timestep=timestep,
+                sample=latent)
 
-        crossmap_2d_avg_neg = crossmap_2d_avg.mean(dim=1, keepdim=True)
-        pred_negative, pred_negative_dict = unet_model(
-            sample=latent,
-            timestep=timestep,
-            encoder_hidden_states=text_negative_embeddings,
-            encoder_attention_mask=None,
-            added_cond_kwargs=dict(
-                text_embeds=text_negative_pooled,
-                time_ids=image_metadata_validate
-            ),
-            vision_input_dict=negative_image_output,
-            vision_guided_mask=crossmap_2d_avg,
-            return_as_origin=False,
-            return_text2image_mask=True,
-            multiple_reference_image=False
-        )
+            latent = step.prev_sample
 
-        pred = classifier_free_guidance_image_prompt_cascade(
-            pred_t_cond=None, pred_ti_cond=pred_cond, pred_uncond=pred_negative, 
-            guidance_weight_t=args.guidance_weight, guidance_weight_i=args.guidance_weight, 
-            guidance_stdev_rescale_factor=0, cfg_rescale_mode="naive_global_direct"
-        )
-        step = scheduler.step(
-            model_output=pred,
-            model_output_type=args.unet_prediction,
-            timestep=timestep,
-            sample=latent)
+            current_step += 1
 
-        latent = step.prev_sample
+        sample = vae_decoder(step.pred_original_sample)
 
-        current_step += 1
+        # save each image 
+        for sample_i in range(sample.size(0)):
+            sample_i_image = torch.clamp(sample[sample_i] * 0.5 + 0.5, min=0, max=1).float()
+            to_pil_image(sample_i_image).save(args.output_image_dir + "/image_{}_{}.png".format(record_id, sample_i))
 
-    sample = vae_decoder(step.pred_original_sample)
-    end = time.time()
-    print("运行时间：", end - start, "秒")
-
-
-    # save each image 
-    for sample_i in range(sample.size(0)):
-        sample_i_image = torch.clamp(sample[sample_i] * 0.5 + 0.5, min=0, max=1).float()
-        to_pil_image(sample_i_image).save(args.output_image_dir + "/output_{}.jpg".format(sample_i))
-
-    # save grid images
-    sample = make_grid(sample, normalize=True, value_range=(-1, 1), nrow=args.nrow).float()
-    to_pil_image(sample).save(args.output_image_grid_dir + "/grid_image.jpg")
+        # save grid images
+        sample = make_grid(sample, normalize=True, value_range=(-1, 1), nrow=args.nrow).float()
+        to_pil_image(sample).save(args.output_image_grid_dir + "/grid_image_{}.png".format(record_id))
+        record_id += 1

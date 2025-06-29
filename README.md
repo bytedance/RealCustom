@@ -41,14 +41,27 @@ bash envs/init.sh
 You can dowload all the models in [huggingface](https://huggingface.co/bytedance-research/RealCustom) and put them in ckpts/.
 
 ### ✍️ Inference
+single image inference
 ```bash 
 bash inference/inference_single_image.sh
+```
+
+batch image inference
+```bash
+bash inference/inference_batch_images.sh
 ```
 
 ### 🌟 Gradio Demo
 ```
 python inference/app.py
 ```
+
+### 🖌️ Multi-Round Generation
+<p align="center">
+<img src="./assets/multiround_generation.jpg" width=95% height=95% 
+class="center">
+</p>
+
 
 ### 🎨 Enjoy on [Dreamina](https://jimeng.jianying.com/ai-tool/home)
 RealCustom is previously commercially applied in Dreamina and Doubao, ByteDance. You can also enjoy the more advanced customization algorithm in Dreamina!

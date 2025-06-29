@@ -26,6 +26,12 @@ def find_phrase_positions_in_text(text, phrase):
         positions.append(position)
     return positions
 
+
+def classifier_free_guidance(pred_t_cond, pred_uncond, guidance_weight_t=7.5):
+    pred = pred_uncond + guidance_weight_t * (pred_t_cond - pred_uncond)
+    return pred
+
+
 def classifier_free_guidance_image_prompt_cascade(
     pred_t_cond, pred_ti_cond, pred_uncond, guidance_weight_t=7.5, guidance_weight_i=7.5, 
     guidance_stdev_rescale_factor=0.7, cfg_rescale_mode="none", super_cross_mask=None

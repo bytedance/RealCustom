@@ -156,9 +156,9 @@ class RealCustomInferencePipeline:
 
         new_unet_checkpoint="",          # in case you want to change
         new_realcustom_checkpoint="",    # in case you want to change
+        return_each_image=True,
         mask_strategy=["min_max_per_channel"],
         mask_reused_step=12,
-        return_each_image=False,
     ):
         
         if new_unet_checkpoint != "" and new_unet_checkpoint != self.unet_checkpoint:
@@ -323,7 +323,8 @@ class RealCustomInferencePipeline:
         # to_pil_image(sample_mask).save("./output_grid_mask.jpg")
 
         if return_each_image:
-            return images_pil_list, to_pil_image(sample), to_pil_image(sample_mask)
+            images_pil_list.append(to_pil_image(sample))
+            return images_pil_list, to_pil_image(sample_mask)
         else:
             return to_pil_image(sample), to_pil_image(sample_mask)
 

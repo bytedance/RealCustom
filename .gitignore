@@ -180,3 +180,5 @@ output/
 ckpts/
 outputs/
 temps/
+prompts/
+examples/

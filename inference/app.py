@@ -19,7 +19,8 @@ from inference.pipeline import RealCustomInferencePipeline
 def create_demo():
     pipeline = RealCustomInferencePipeline(
         unet_config="configs/realcustom_sigdino_highres.json",
-        unet_checkpoint="ckpts/sdxl/unet/sdxl-unet.bin",
+        # unet_checkpoint="ckpts/sdxl/unet/sdxl-unet.bin",
+        unet_checkpoint="ckpts/sdxl/unet/general_v1-3_sdxl_03.pth",
         realcustom_checkpoint="ckpts/realcustom/RealCustom_highres.pth",
         vae_config="ckpts/sdxl/vae/sdxl.json",
         vae_checkpoint="ckpts/sdxl/vae/sdxl-vae.pth",
@@ -59,7 +60,8 @@ def create_demo():
                 generate_btn = gr.Button("Generate")
 
             with gr.Column():
-                output_image = gr.Image(label="Generated Image")
+                # output_image = gr.Image(label="Generated Image")
+                output_image = gr.Gallery(label="Generated Images")
                 output_mask = gr.Image(label="Guidance Mask")
 
             inputs = [
@@ -79,4 +81,4 @@ def create_demo():
 
 if __name__ == "__main__":
     demo = create_demo()
-    demo.launch(server_name='0.0.0.0', server_port=7860)
+    demo.launch(server_name='0.0.0.0', server_port=7888)

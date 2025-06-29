@@ -9,7 +9,8 @@ sudo apt-get update
 sudo apt-get install ffmpeg libsm6 libxext6  -y
 
 echo "Install pip dependencies"
-pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118
+# pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118
+pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
 pip install -r envs/requirements.txt
 
 # install clip
