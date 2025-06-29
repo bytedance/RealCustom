@@ -57,6 +57,8 @@ python inference/app.py
 ```
 
 ### 🖌️ Multi-Round Generation
+our real-word paradigm naturally supports multi-round generation, where the output from each round serves as the reference subject image for the next. This enables flexible customization in each round by specifying different target real words. For example, in the first row, the initial round uses "dog" as the target word, preserving only the dog's characteristics. In the second round, the target word "dog with the pink hat" incorporates the pink hat generated in the previous round, allowing RealCustom++ to retain both features. This demonstrates the strong generalization capability of RealCustom++, enabling the progressive accumulation and preservation of subject characteristics across multiple rounds.
+
 <p align="center">
 <img src="./assets/multiround_generation.jpg" width=95% height=95% 
 class="center">
