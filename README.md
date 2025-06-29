@@ -37,7 +37,7 @@ Install the requirements
 bash envs/init.sh
 ```
 
-### Download Models
+### 🎭 Download Models
 You can dowload all the models in [huggingface](https://huggingface.co/bytedance-research/RealCustom) and put them in ckpts/.
 
 ### ✍️ Inference
