@@ -1,0 +1,90 @@
+[tool.poetry]
+name = "realcustom"
+version = "0.1.0"
+description = "RealCustom: narrowing real text word for real-time open-domain text-to-image customization"
+authors = ["ByteDance Research"]
+readme = "README.md"
+packages = [{include = "models"}, {include = "inference"}, {include = "schedulers"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+numpy = "*"
+ftfy = "*"
+bs4 = "0.0.1"
+bson = "0.5.10"
+diffusers = "0.19.3"
+einops = "0.6.0"
+kornia = "0.6.12"
+lpips = "0.1.4"
+sentencepiece = "0.1.99"
+transformers = "4.36.2"
+tqdm = "4.64.1"
+torchgeometry = "*"
+expecttest = "*"
+accelerate = "0.24.1"
+av = "10.0.0"
+pims = "0.6.1"
+opencv-python-headless = "4.6.0.66"
+gradio = "3.42.0"
+httpx = "0.23.3"
+opencv-python = "*"
+open-clip-torch = "*"
+protobuf = "3.20.0"
+huggingface-hub = "0.25.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0.0"
+pytest-cov = "^4.0.0"
+pytest-mock = "^3.10.0"
+
+[tool.poetry.scripts]
+test = "pytest:main"
+tests = "pytest:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "unit: marks tests as unit tests (deselect with '-m \"not unit\"')",
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
+[tool.coverage.run]
+source = ["models", "inference", "schedulers"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__init__.py",
+    "*/conftest.py",
+    "*/setup.py",
+    "*/venv/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+show_missing = true
+skip_covered = false
+fail_under = 80
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
