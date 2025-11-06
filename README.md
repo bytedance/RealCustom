@@ -25,6 +25,7 @@ class="center">
 </p>
 
 ## 🔥 News
+- [10/2025] 🔥 RealCustom++ is accepted by T-PAMI.
 - [04/2025] 🔥 We release our newly customization framework [UNO](https://github.com/bytedance/UNO?tab=readme-ov-file)
 - [04/2025] 🔥 The code and model of RealCustom is released.
 
