@@ -95,11 +95,15 @@ If you find this project useful for your research, please consider citing our pa
   pages={7476--7485},
   year={2024}
 }
-@article{mao2024realcustom++,
-  title={Realcustom++: Representing images as real-word for real-time customization},
+@ARTICLE{11206511,
   author={Mao, Zhendong and Huang, Mengqi and Ding, Fei and Liu, Mingcong and He, Qian and Zhang, Yongdong},
-  journal={arXiv preprint arXiv:2408.09744},
-  year={2024}
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence}, 
+  title={RealCustom++: Representing Images as Real Textual Word for Real-Time Customization}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={1-18},
+  doi={10.1109/TPAMI.2025.3623025}
 }
 @article{wu2025less,
   title={Less-to-More Generalization: Unlocking More Controllability by In-Context Generation},
