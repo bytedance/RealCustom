@@ -177,6 +177,9 @@ cython_debug/
 .vscode/
 output/
 
+# Claude Code settings
+.claude/
+
 ckpts/
 outputs/
 temps/
